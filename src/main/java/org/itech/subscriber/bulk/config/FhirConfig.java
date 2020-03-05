@@ -1,4 +1,4 @@
-package org.itech.bs;
+package org.itech.subscriber.bulk.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,10 +1,9 @@
-package org.itech.bs.data.dao;
+package org.itech.subscriber.bulk.data.dao;
 
-import java.net.URI;
 import java.util.List;
 
 import org.hl7.fhir.r4.model.ResourceType;
-import org.itech.bs.data.model.BulkSubscription;
+import org.itech.subscriber.bulk.data.model.BulkSubscription;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -16,8 +15,11 @@ public interface BulkSubscriptionDAO extends CrudRepository<BulkSubscription, Lo
 	@Query("SELECT bulk FROM BulkSubscription bulk JOIN bulk.subscriptions s WHERE KEY(s) = :resourceType")
 	List<BulkSubscription> findSubscriptionsWithResourceType(@Param("resourceType") ResourceType resourceType);
 
-	@Query("SELECT bulk FROM BulkSubscription bulk JOIN bulk.subscriptions s WHERE KEY(s) = :resourceType AND bulk.subscribeToUri = :subscribeToUri")
+	@Query("SELECT bulk FROM BulkSubscription bulk JOIN bulk.subscriptions s WHERE KEY(s) = :resourceType AND bulk.remoteServer.id = :remoteServerId")
 	List<BulkSubscription> findSubscriptionsWithResourceTypeAndSubscribeToUri(ResourceType resourceType,
-			@Param("subscribeToUri") URI subscribeToUri);
+			@Param("remoteServerId") Long remoteServerId);
+
+	@Query("SELECT bulk FROM BulkSubscription bulk JOIN bulk.subscriptions s WHERE bulk.remoteServer.id = :remoteServerId")
+	List<BulkSubscription> findSubscriptionsSubscribeToUri(@Param("remoteServerId") Long remoteServerId);
 
 }

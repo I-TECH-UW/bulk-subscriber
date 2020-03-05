@@ -1,4 +1,4 @@
-package org.itech.bs.service.converter;
+package org.itech.subscriber.bulk.service.converter;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;

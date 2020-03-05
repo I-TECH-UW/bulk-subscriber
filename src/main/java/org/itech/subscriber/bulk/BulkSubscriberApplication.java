@@ -1,4 +1,4 @@
-package org.itech.bs;
+package org.itech.subscriber.bulk;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

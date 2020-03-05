@@ -1,19 +1,23 @@
-package org.itech.bs.data.model;
+package org.itech.subscriber.bulk.data.model;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Transient;
 
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.hl7.fhir.r4.model.Subscription;
+import org.itech.fhircore.model.Server;
 import org.itech.fhircore.model.base.PersistenceEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,10 +32,10 @@ public class BulkSubscription extends PersistenceEntity<Long> {
 
 	private String subscriptionType;
 
-	// TODO allow multiple subscriber in the future maybe?
-	private URI subscriberUri;
-
-	private URI subscribeToUri;
+	@ManyToOne(cascade = CascadeType.PERSIST)
+	@JoinColumn(name = "remote_server_id", nullable = false)
+	@OnDelete(action = OnDeleteAction.CASCADE)
+	private Server remoteServer;
 
 	@ElementCollection
 	@MapKeyColumn(name = "resource_type")
