@@ -12,6 +12,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Transient;
+import javax.validation.constraints.NotNull;
 
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -32,17 +33,23 @@ public class BulkSubscription extends PersistenceEntity<Long> {
 
 	private String subscriptionType;
 
+	// persistence
 	@ManyToOne(cascade = CascadeType.PERSIST)
-	@JoinColumn(name = "remote_server_id", nullable = false)
+	@JoinColumn(name = "remote_server_id", nullable = false, updatable = false)
 	@OnDelete(action = OnDeleteAction.CASCADE)
+	// validation
+	@NotNull
 	private Server remoteServer;
 
+	// persistence
 	@ElementCollection
 	@MapKeyColumn(name = "resource_type")
 	@Column(name = "subscription_json", length = 65535)
 	@CollectionTable(name = "subscriptions", joinColumns = @JoinColumn(name = "bulk_subscription_id"))
+	// json serialization
 	@JsonIgnore
 	private Map<ResourceType, Subscription> subscriptions;
+
 	@Transient
 	private Map<ResourceType, Boolean> subscriptionSuccesses;
 

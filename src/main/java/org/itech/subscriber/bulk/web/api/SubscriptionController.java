@@ -1,11 +1,12 @@
 package org.itech.subscriber.bulk.web.api;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.itech.fhircore.model.Server;
 import org.itech.subscriber.bulk.data.model.BulkSubscription;
 import org.itech.subscriber.bulk.service.BulkSubscriptionService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,21 +26,23 @@ public class SubscriptionController {
 
 	@GetMapping
 	public ResponseEntity<Iterable<BulkSubscription>> getAllSubscriptions() throws UnsupportedEncodingException {
-		return new ResponseEntity<>(subscriptionService.getDAO().findAll(), HttpStatus.CREATED);
+		return ResponseEntity.ok(subscriptionService.getDAO().findAll());
 	}
 
 	@GetMapping("/{bulkId}")
 	public ResponseEntity<BulkSubscription> getSubscription(@PathVariable("bulkId") Long bulkId)
 			throws UnsupportedEncodingException {
-		return new ResponseEntity<>(subscriptionService.getDAO().findById(bulkId).get(), HttpStatus.CREATED);
+		return ResponseEntity.ok(subscriptionService.getDAO().findById(bulkId).get());
 	}
-
 
 	@PostMapping
 	public ResponseEntity<BulkSubscription> createSubscription(@PathVariable("serverId") Long serverId,
-			@PathVariable("subscriptionType") String subscriptionType) throws UnsupportedEncodingException {
-		return new ResponseEntity<>(subscriptionService.createBulkSubscriptions(serverId, subscriptionType),
-				HttpStatus.CREATED);
+			@PathVariable("subscriptionType") String subscriptionType)
+			throws UnsupportedEncodingException, URISyntaxException {
+		BulkSubscription subscription = subscriptionService.createBulkSubscriptions(serverId, subscriptionType);
+		return ResponseEntity.created(new URI(
+				Server.SERVER_PATH + "/{serverId}/subscription/" + subscriptionType + "/" + subscription.getId()))
+				.body(subscription);
 	}
 
 }

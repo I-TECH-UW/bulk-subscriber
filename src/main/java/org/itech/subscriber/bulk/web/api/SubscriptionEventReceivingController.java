@@ -9,7 +9,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.http.client.ClientProtocolException;
 import org.hl7.fhir.r4.model.ResourceType;
 import org.itech.subscriber.bulk.service.SubscriptionEventNotificationService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,7 +49,7 @@ public class SubscriptionEventReceivingController {
 			eventNotificationService.notifyFromSource(remoteServerId);
 		}
 
-		return new ResponseEntity<>(HttpStatus.OK);
+		return ResponseEntity.ok("received");
 	}
 
 	@RequestMapping(SUBSCRIPTION_EVENT_PATH + "/{resourceType}/**")
@@ -60,7 +59,7 @@ public class SubscriptionEventReceivingController {
 			throws ClientProtocolException, IOException, URISyntaxException {
 		log.debug("ping received for " + resourceType + " from server repporting as " + remoteServerId);
 		eventNotificationService.notifyForResourceTypeFromSource(resourceType, remoteServerId);
-		return new ResponseEntity<>(HttpStatus.OK);
+		return ResponseEntity.ok("received");
 	}
 
 }

@@ -4,9 +4,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
@@ -58,7 +58,7 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 	@Value("${org.itech.localhost.public.address}")
 	private String localhostPublicAddress;
 
-	private Map<String, List<ResourceType>> subscriptionTypeToResourceType;
+	private Map<String, Set<ResourceType>> subscriptionTypeToResourceType;
 
 	public BulkSubscriptionServiceImpl(ServerService serverService, BulkSubscriptionDAO bulkSubscriptionDAO,
 			FhirContext fhirContext, FhirResourceGroupService fhirResources) {
@@ -117,10 +117,10 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 		return bulkSubscriptionDAO.save(bulk);
 	}
 
-	private Bundle createSubscriptionsForType(BulkSubscription bulk, List<ResourceType> resourceTypes)
+	private Bundle createSubscriptionsForType(BulkSubscription bulk, Set<ResourceType> set)
 			throws UnsupportedEncodingException {
 		Bundle subscriptionBundle = new Bundle();
-		for (ResourceType resourceType : resourceTypes) {
+		for (ResourceType resourceType : set) {
 			Subscription subscription = createSubscriptionForType(bulk, resourceType);
 			BundleEntryComponent bundleEntry = new BundleEntryComponent();
 			bundleEntry.setResource(subscription);
