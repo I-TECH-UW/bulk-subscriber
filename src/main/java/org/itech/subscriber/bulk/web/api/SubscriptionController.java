@@ -41,7 +41,7 @@ public class SubscriptionController {
 			throws UnsupportedEncodingException, URISyntaxException {
 		BulkSubscription subscription = subscriptionService.createBulkSubscriptions(serverId, subscriptionType);
 		return ResponseEntity.created(new URI(
-				Server.SERVER_PATH + "/{serverId}/subscription/" + subscriptionType + "/" + subscription.getId()))
+				Server.SERVER_PATH + "/" + serverId + "/subscription/" + subscriptionType + "/" + subscription.getId()))
 				.body(subscription);
 	}
 

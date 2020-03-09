@@ -49,7 +49,7 @@ public class SubscriptionEventReceivingController {
 			eventNotificationService.notifyFromSource(remoteServerId);
 		}
 
-		return ResponseEntity.ok("received");
+		return ResponseEntity.ok("");
 	}
 
 	@RequestMapping(SUBSCRIPTION_EVENT_PATH + "/{resourceType}/**")
@@ -59,7 +59,7 @@ public class SubscriptionEventReceivingController {
 			throws ClientProtocolException, IOException, URISyntaxException {
 		log.debug("ping received for " + resourceType + " from server repporting as " + remoteServerId);
 		eventNotificationService.notifyForResourceTypeFromSource(resourceType, remoteServerId);
-		return ResponseEntity.ok("received");
+		return ResponseEntity.ok("");
 	}
 
 }

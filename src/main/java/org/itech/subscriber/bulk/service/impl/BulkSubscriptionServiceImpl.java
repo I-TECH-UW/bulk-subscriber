@@ -5,10 +5,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-
-import javax.annotation.PostConstruct;
 
 import org.hibernate.ObjectNotFoundException;
 import org.hl7.fhir.r4.model.Bundle;
@@ -25,6 +24,7 @@ import org.hl7.fhir.r4.model.Subscription.SubscriptionChannelType;
 import org.hl7.fhir.r4.model.Subscription.SubscriptionStatus;
 import org.hl7.fhir.utilities.xhtml.NodeType;
 import org.hl7.fhir.utilities.xhtml.XhtmlNode;
+import org.itech.fhircore.model.ResourceSearchParam;
 import org.itech.fhircore.model.Server;
 import org.itech.fhircore.service.FhirResourceGroupService;
 import org.itech.fhircore.service.ServerService;
@@ -58,8 +58,6 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 	@Value("${org.itech.localhost.public.address}")
 	private String localhostPublicAddress;
 
-	private Map<String, Set<ResourceType>> subscriptionTypeToResourceType;
-
 	public BulkSubscriptionServiceImpl(ServerService serverService, BulkSubscriptionDAO bulkSubscriptionDAO,
 			FhirContext fhirContext, FhirResourceGroupService fhirResources) {
 		super(bulkSubscriptionDAO);
@@ -67,11 +65,6 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 		this.bulkSubscriptionDAO = bulkSubscriptionDAO;
 		this.fhirContext = fhirContext;
 		this.fhirResources = fhirResources;
-	}
-
-	@PostConstruct
-	private void getFhirResources() {
-		subscriptionTypeToResourceType = fhirResources.getAllFhirGroupsToResourceTypes();
 	}
 
 	@Override
@@ -91,7 +84,7 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 		bulk.setSubscriptionType(subscriptionType);
 
 		Bundle subscriptionsBundle = createSubscriptionsForType(bulk,
-				subscriptionTypeToResourceType.get(subscriptionType));
+				fhirResources.getAllFhirGroupsToResourceTypesGrouped().get(subscriptionType));
 		Optional<Bundle> receivedSubscriptionsBundleOpt = sendSubscriptionsToRemote(subscriptionsBundle,
 				bulk.getRemoteServer().getServerUrl());
 
@@ -117,11 +110,14 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 		return bulkSubscriptionDAO.save(bulk);
 	}
 
-	private Bundle createSubscriptionsForType(BulkSubscription bulk, Set<ResourceType> set)
+	private Bundle createSubscriptionsForType(BulkSubscription bulk,
+			Map<ResourceType, Set<ResourceSearchParam>> groupedResourceTypeSearchParams)
 			throws UnsupportedEncodingException {
 		Bundle subscriptionBundle = new Bundle();
-		for (ResourceType resourceType : set) {
-			Subscription subscription = createSubscriptionForType(bulk, resourceType);
+		for (Entry<ResourceType, Set<ResourceSearchParam>> groupedResourceSearchParamsSet : groupedResourceTypeSearchParams
+				.entrySet()) {
+			Subscription subscription = createSubscriptionForType(bulk, groupedResourceSearchParamsSet.getKey(),
+					groupedResourceSearchParamsSet.getValue());
 			BundleEntryComponent bundleEntry = new BundleEntryComponent();
 			bundleEntry.setResource(subscription);
 			bundleEntry.setRequest(new BundleEntryRequestComponent().setMethod(HTTPVerb.POST)
@@ -132,22 +128,22 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 		return subscriptionBundle;
 	}
 
-	private Subscription createSubscriptionForType(BulkSubscription bulk, ResourceType resourceType)
-			throws UnsupportedEncodingException {
+	private Subscription createSubscriptionForType(BulkSubscription bulk, ResourceType resourceType,
+			Set<ResourceSearchParam> resourceSearchParams) throws UnsupportedEncodingException {
 		Subscription subscription = new Subscription();
 		subscription.setText(new Narrative().setStatus(NarrativeStatus.GENERATED).setDiv(new XhtmlNode(NodeType.Text)));
 		subscription.setStatus(SubscriptionStatus.REQUESTED);
-		subscription
-				.setReason("bulk subscription to detect any Creates or Updates to resources of type " + resourceType);
+		subscription.setReason("bulk subscription to detect any Creates or Updates to resources of type " + resourceType
+				+ " matching params " + resourceSearchParams);
 
 		SubscriptionChannelComponent channel = new SubscriptionChannelComponent();
 		channel.setType(SubscriptionChannelType.RESTHOOK).setEndpoint(getLocalhostEndpointForRemoteServer(bulk));
 		channel.setPayload("application/fhir+json");
 		subscription.setChannel(channel);
 
-		subscription.setCriteria(resourceType.name() + "?");
+		String criteriaString = createCriteriaString(resourceType, resourceSearchParams);
+		subscription.setCriteria(criteriaString);
 		return subscription;
-
 	}
 
 	private String getLocalhostEndpointForRemoteServer(BulkSubscription bulk) throws UnsupportedEncodingException {
@@ -158,6 +154,23 @@ public class BulkSubscriptionServiceImpl extends CrudServiceImpl<BulkSubscriptio
 				// string, so SOURCE_RESOURCE_PATH_PARAM will be filled in by the responding
 				// server
 				+ SubscriptionEventReceivingController.SOURCE_RESOURCE_PATH_PARAM + "=";
+	}
+
+	private String createCriteriaString(ResourceType resourceType, Set<ResourceSearchParam> resourceSearchParams) {
+		boolean queryString = false;
+		String criteriaString = resourceType.name() + "?";
+		for (ResourceSearchParam resourceSearchParam : resourceSearchParams) {
+			if (resourceSearchParam.getParamName() != null) {
+				criteriaString += resourceSearchParam.getParamName() + "="
+						+ String.join(",", resourceSearchParam.getParamValues()) + "&";
+				queryString = true;
+			}
+		}
+		if (queryString) {
+			criteriaString = criteriaString.substring(0, criteriaString.length() - 1);
+		}
+		log.debug("search criteria string: " + criteriaString);
+		return criteriaString;
 	}
 
 	private Optional<Bundle> sendSubscriptionsToRemote(Bundle subscriptionsBundle, URI subscribeToUri) {
